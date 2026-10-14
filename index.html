@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="纯前端零依赖的文本处理工具箱：大小写转换、去重排序、编码解码、JSON 格式化、字数统计">
+<title>Text Toolbox · 文本处理工具箱</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="orb orb-a"></span>
+  <span class="orb orb-b"></span>
+  <span class="orb orb-c"></span>
+  <span class="grain"></span>
+</div>
+
+<div class="app">
+
+  <!-- ==================== 顶栏 ==================== -->
+  <header class="topbar glass">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">¶</span>
+      <span class="brand-text">
+        <strong>Text Toolbox</strong>
+        <em>文本处理工具箱</em>
+      </span>
+    </div>
+
+    <nav class="tabs" id="catTabs" role="tablist" aria-label="操作分类">
+      <button class="tab is-active" type="button" role="tab" data-cat="case" aria-selected="true">大小写</button>
+      <button class="tab" type="button" role="tab" data-cat="text" aria-selected="false">文本</button>
+      <button class="tab" type="button" role="tab" data-cat="lines" aria-selected="false">行处理</button>
+      <button class="tab" type="button" role="tab" data-cat="encode" aria-selected="false">编码</button>
+      <button class="tab" type="button" role="tab" data-cat="json" aria-selected="false">JSON</button>
+      <button class="tab" type="button" role="tab" data-cat="stats" aria-selected="false">统计</button>
+    </nav>
+
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="openBtn" type="button">
+        <span aria-hidden="true">📂</span><span class="btn-label">导入</span>
+      </button>
+      <button class="btn btn-ghost" id="undoBtn" type="button" title="撤销上一次输出" disabled>
+        <span aria-hidden="true">↶</span><span class="btn-label">撤销</span>
+      </button>
+      <button class="btn btn-ghost" id="sampleBtn" type="button">
+        <span aria-hidden="true">✨</span><span class="btn-label">示例</span>
+      </button>
+      <button class="btn btn-primary" id="clearBtn" type="button">
+        <span aria-hidden="true">✕</span><span class="btn-label">清空</span>
+      </button>
+      <input type="file" id="fileInput" accept=".txt,.log,.json,.csv,.md,.html,.css,.js,.xml,text/*" hidden>
+    </div>
+  </header>
+
+  <!-- ==================== 操作条 ==================== -->
+  <section class="opbar glass" aria-label="操作">
+    <div class="op-list" id="opList"></div>
+    <div class="op-extra" id="opExtra" hidden>
+      <span class="op-extra-label" id="opExtraLabel"></span>
+      <input type="text" id="opParam" class="op-param" spellcheck="false" autocomplete="off" placeholder="参数">
+      <button class="btn btn-ghost slim" id="opApply" type="button">执行</button>
+      <button class="btn btn-ghost slim" id="opCancel" type="button">取消</button>
+    </div>
+  </section>
+
+  <!-- ==================== 主体 ==================== -->
+  <main class="workspace">
+
+    <!-- 左：输入 -->
+    <section class="pane glass" aria-label="输入文本">
+      <div class="pane-head">
+        <span class="pane-title">输入</span>
+        <div class="pane-tools">
+          <span class="pane-stat" id="inStat">0 字符</span>
+          <button class="chip" id="inPasteBtn" type="button">粘贴</button>
+          <button class="chip" id="inClearBtn" type="button">清空</button>
+        </div>
+      </div>
+      <textarea id="input" spellcheck="false" wrap="off"
+        placeholder="把要处理的文本粘贴到这里（也可以直接拖入 .txt / .json / .log 文件）"></textarea>
+    </section>
+
+    <!-- 中：输出 -->
+    <section class="pane glass" aria-label="处理结果">
+      <div class="pane-head">
+        <span class="pane-title">结果</span>
+        <div class="pane-tools">
+          <span class="pane-stat" id="outStat">0 字符</span>
+          <button class="chip" id="outCopyBtn" type="button">复制</button>
+          <button class="chip" id="outUseBtn" type="button" title="把结果当作新输入，方便连续处理">用作输入</button>
+          <button class="chip" id="outDownloadBtn" type="button">下载</button>
+        </div>
+      </div>
+      <div class="out-wrap">
+        <textarea id="output" spellcheck="false" wrap="off" readonly
+          placeholder="点击上方任意操作后，结果会显示在这里"></textarea>
+        <div class="out-badge" id="outBadge" hidden></div>
+      </div>
+    </section>
+
+    <!-- 右：统计 -->
+    <section class="pane glass" aria-label="统计信息">
+      <div class="pane-head">
+        <span class="pane-title">统计</span>
+        <div class="pane-tools">
+          <span class="pane-stat" id="statTarget">当前输入</span>
+        </div>
+      </div>
+      <div class="stat-scroll">
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="block-title"><span>字符分布</span></div>
+        <div class="dist-list" id="distList"></div>
+        <div class="block-title"><span>出现最多的词</span></div>
+        <div class="word-list" id="wordList"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 状态栏 ==================== -->
+  <footer class="statusbar glass">
+    <span class="status-item" id="statusOp">未执行操作</span>
+    <span class="status-item" id="statusIn">输入 0 字符</span>
+    <span class="status-item" id="statusOut">输出 0 字符</span>
+    <span class="status-spacer"></span>
+    <span class="status-hint">点操作立即执行 · 「用作输入」可连续处理 · Ctrl/⌘+Z 撤销</span>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
